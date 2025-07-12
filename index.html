@@ -86,7 +86,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             padding: 24px;
             width: 100%;
-            /* <<< 変更点: コンテナの最大幅を広げました >>> */
             max-width: 660px; 
             display: flex;
             flex-direction: column;
@@ -323,7 +322,8 @@
                     <button id="discharge-minus-btn" class="icon-button" aria-label="1%減らす">
                         <svg class="btn-icon"><use href="#icon-minus"/></svg>
                     </button>
-                    <input type="range" id="discharge-speed-slider" min="1" max="100" value="5">
+                    <!-- <<< 変更点: minを0に、maxを600に変更しました >>> -->
+                    <input type="range" id="discharge-speed-slider" min="0" max="600" value="5">
                     <button id="discharge-plus-btn" class="icon-button" aria-label="1%増やす">
                         <svg class="btn-icon"><use href="#icon-plus"/></svg>
                     </button>
