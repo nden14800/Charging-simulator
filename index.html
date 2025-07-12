@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>充電シミュレーター</title>
+    <!-- Google Fonts: Roboto -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CSS --- */
+        :root {
+            /* Light Theme */
+            --bg-color: #f0f2f5;
+            --card-bg-color: #ffffff;
+            --text-color: #1c1e21;
+            --secondary-text-color: #606770;
+            --primary-color: #007bff;
+            --border-color: #ced4da;
+            --button-bg: #e4e6eb;
+            --button-hover-bg: #d8dbdf;
+            --battery-bar-bg: #e9ecef;
+            --battery-low-color: #dc3545;
+            --battery-medium-color: #ffc107;
+            --battery-high-color: #28a745;
+            --active-button-bg: #007bff;
+            --active-button-text: #ffffff;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* Dark Theme */
+                --bg-color: #18191a;
+                --card-bg-color: #242526;
+                --text-color: #e4e6eb;
+                --secondary-text-color: #b0b3b8;
+                --primary-color: #2d88ff;
+                --border-color: #3e4042;
+                --button-bg: #3a3b3c;
+                --button-hover-bg: #4e4f50;
+                --battery-bar-bg: #3a3b3c;
+                --active-button-bg: #2d88ff;
+                --active-button-text: #e4e6eb;
+            }
+        }
+
+        /* --- General Styles --- */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html, body {
+            height: 100%;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s, color 0.3s;
+            padding: 20px;
+        }
+
+        /* --- SVG Icons --- */
+        .icon {
+            width: 32px;
+            height: 32px;
+            vertical-align: middle;
+        }
+        .btn-icon {
+            width: 16px;
+            height: 16px;
+        }
+
+        /* --- Simulator Container --- */
+        .simulator-container {
+            background-color: var(--card-bg-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            width: 100%;
+            /* <<< 変更点: コンテナの最大幅を広げました >>> */
+            max-width: 660px; 
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        /* --- Battery Display --- */
+        .battery-display {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .battery-info {
+            flex-grow: 1;
+        }
+
+        .battery-level-text {
+            font-size: 36px;
+            font-weight: 700;
+        }
+        
+        .battery-status-text {
+            font-size: 14px;
+            color: var(--secondary-text-color);
+            min-height: 1.2em;
+        }
+
+        .battery-bar-container {
+            width: 100%;
+            height: 10px;
+            background-color: var(--battery-bar-bg);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        #battery-bar {
+            height: 100%;
+            width: 0%;
+            border-radius: 5px;
+            transition: width 0.05s linear, background-color 0.5s;
+        }
+
+        /* --- Controls --- */
+        .controls, .speed-control-group, .main-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .controls {
+            gap: 20px;
+        }
+        
+        .control-group {
+             display: flex;
+             justify-content: space-between;
+             align-items: center;
+             gap: 10px;
+        }
+
+        .main-actions .control-group {
+            gap: 8px;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--secondary-text-color);
+        }
+        
+        #speed-display, #discharge-speed-display {
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+            color: var(--primary-color);
+            min-height: 1.2em;
+        }
+        
+        #discharge-speed-display {
+            color: var(--battery-low-color);
+        }
+
+        /* --- Buttons --- */
+        button {
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 16px;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s, color 0.2s, border-color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        button:hover {
+            background-color: var(--button-hover-bg);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+        
+        button.active {
+            background-color: var(--active-button-bg);
+            color: var(--active-button-text);
+            border-color: var(--active-button-bg);
+        }
+        
+        .icon-button {
+            padding: 8px;
+            flex-grow: 0;
+            width: 40px;
+            height: 40px;
+        }
+
+        /* --- Slider --- */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 8px;
+            background: var(--battery-bar-bg);
+            border-radius: 5px;
+            outline: none;
+            opacity: 0.9;
+            transition: opacity .2s;
+        }
+
+        input[type="range"]:hover {
+            opacity: 1;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid var(--card-bg-color);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid var(--card-bg-color);
+        }
+        
+        #discharge-speed-slider::-webkit-slider-thumb {
+             background: var(--battery-low-color);
+        }
+        #discharge-speed-slider::-moz-range-thumb {
+             background: var(--battery-low-color);
+        }
+        
+        #reset-btn {
+            background-color: transparent;
+            color: var(--battery-low-color);
+            border-color: var(--battery-low-color);
+        }
+        #reset-btn:hover {
+            background-color: var(--battery-low-color);
+            color: white;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- SVG Icon Definitions (hidden) -->
+    <div style="display: none;">
+        <svg id="icon-charging" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-battery-charging" viewBox="0 0 16 16"> <path d="M9.585 2.568a.5.5 0 0 1 .226.58L8.677 6.832h1.99a.5.5 0 0 1 .364.843l-5.334 5.667a.5.5 0 0 1-.842-.49L5.99 9.167H4a.5.5 0 0 1-.364-.843l5.333-5.667a.5.5 0 0 1 .616-.09z"/> <path d="M2 4h4.332l-.94 1H2a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h2.38l-.308 1H2a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2"/> <path d="M2 6h2.45L2.908 7.639A1.5 1.5 0 0 0 3.313 10H2zm8.595-2-.308 1H12a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H9.276l-.942 1H12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/> <path d="M12 10h-1.783l1.542-1.639q.146-.156.241-.34zm0-3.354V6h-.646a1.5 1.5 0 0 1 .646.646M16 8a1.5 1.5 0 0 1-1.5 1.5v-3A1.5 1.5 0 0 1 16 8"/></svg>
+        <svg id="icon-empty" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-battery" viewBox="0 0 16 16"> <path d="M0 6a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2zm2-1a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1zm14 3a1.5 1.5 0 0 1-1.5 1.5v-3A1.5 1.5 0 0 1 16 8"/></svg>
+        <svg id="icon-half" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-battery-half" viewBox="0 0 16 16"> <path d="M2 6h5v4H2z"/> <path d="M2 4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm10 1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm4 3a1.5 1.5 0 0 1-1.5 1.5v-3A1.5 1.5 0 0 1 16 8"/></svg>
+        <svg id="icon-full" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-battery-full" viewBox="0 0 16 16"> <path d="M2 6h10v4H2z"/> <path d="M2 4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm10 1a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm4 3a1.5 1.5 0 0 1-1.5 1.5v-3A1.5 1.5 0 0 1 16 8"/></svg>
+        <svg id="icon-plus" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-plus-lg" viewBox="0 0 16 16"> <path fill-rule="evenodd" d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2"/></svg>
+        <svg id="icon-minus" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-dash-lg" viewBox="0 0 16 16"> <path fill-rule="evenodd" d="M2 8a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11A.5.5 0 0 1 2 8"/></svg>
+    </div>
+
+    <!-- HTML Content -->
+    <div class="simulator-container">
+        <h1>充電シミュレーター</h1>
+        
+        <div class="battery-display">
+            <div id="battery-icon-container">
+                <!-- SVG Icon will be inserted here -->
+            </div>
+            <div class="battery-info">
+                <span id="battery-level" class="battery-level-text">0%</span>
+                <span id="battery-status" class="battery-status-text">待機中</span>
+                <div class="battery-bar-container">
+                    <div id="battery-bar"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="speed-control-group">
+                <label for="speed-slider">充電速度 (0%→100%にかかる時間)</label>
+                <div class="control-group">
+                    <button id="minus-btn" class="icon-button" aria-label="1秒減らす">
+                        <svg class="btn-icon"><use href="#icon-minus"/></svg>
+                    </button>
+                    <input type="range" id="speed-slider" min="1" max="10800" value="60">
+                    <button id="plus-btn" class="icon-button" aria-label="1秒増やす">
+                        <svg class="btn-icon"><use href="#icon-plus"/></svg>
+                    </button>
+                </div>
+                 <div id="speed-display">1分 0秒</div>
+            </div>
+
+            <div class="speed-control-group">
+                <label for="discharge-speed-slider">放電速度 (1分あたりの減少量)</label>
+                <div class="control-group">
+                    <button id="discharge-minus-btn" class="icon-button" aria-label="1%減らす">
+                        <svg class="btn-icon"><use href="#icon-minus"/></svg>
+                    </button>
+                    <input type="range" id="discharge-speed-slider" min="1" max="100" value="5">
+                    <button id="discharge-plus-btn" class="icon-button" aria-label="1%増やす">
+                        <svg class="btn-icon"><use href="#icon-plus"/></svg>
+                    </button>
+                </div>
+                <div id="discharge-speed-display">1分あたり 5% 減少</div>
+            </div>
+            
+            <div class="main-actions">
+                <label>操作</label>
+                <div class="control-group">
+                    <button id="charge-btn">充電する</button>
+                    <button id="discharge-btn">充電しない (放電)</button>
+                </div>
+                 <button id="reset-btn">リセット</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- JavaScript ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const batteryLevelEl = document.getElementById('battery-level');
+            const batteryStatusEl = document.getElementById('battery-status');
+            const batteryBarEl = document.getElementById('battery-bar');
+            const batteryIconContainer = document.getElementById('battery-icon-container');
+            const chargeBtn = document.getElementById('charge-btn');
+            const dischargeBtn = document.getElementById('discharge-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const speedSlider = document.getElementById('speed-slider');
+            const speedDisplay = document.getElementById('speed-display');
+            const plusBtn = document.getElementById('plus-btn');
+            const minusBtn = document.getElementById('minus-btn');
+            const dischargeSpeedSlider = document.getElementById('discharge-speed-slider');
+            const dischargeSpeedDisplay = document.getElementById('discharge-speed-display');
+            const dischargePlusBtn = document.getElementById('discharge-plus-btn');
+            const dischargeMinusBtn = document.getElementById('discharge-minus-btn');
+
+
+            // SVG Icons
+            const icons = {
+                charging: document.getElementById('icon-charging').cloneNode(true),
+                empty: document.getElementById('icon-empty').cloneNode(true),
+                half: document.getElementById('icon-half').cloneNode(true),
+                full: document.getElementById('icon-full').cloneNode(true),
+            };
+            for (const key in icons) {
+                icons[key].classList.add('icon');
+            }
+
+            // State
+            let batteryLevel = 0; // 0-100
+            let isCharging = false;
+            let simulationInterval = null;
+            let lastDisplayedLevel = -1; 
+            
+            const UPDATE_INTERVAL_MS = 50;
+            const UPDATES_PER_SECOND = 1000 / UPDATE_INTERVAL_MS;
+
+            // --- Time Formatting Function ---
+            const formatTime = (inputSeconds) => {
+                let totalSeconds = Math.round(inputSeconds);
+                if (totalSeconds <= 0) return '0秒';
+
+                const SECONDS_IN_MINUTE = 60;
+                const SECONDS_IN_HOUR = 3600;
+                const SECONDS_IN_DAY = 86400;
+                const SECONDS_IN_WEEK = 604800;
+                const SECONDS_IN_MONTH = 2629800; // approx 30.44 days
+                const SECONDS_IN_YEAR = 31557600; // approx 365.25 days
+
+                const years = Math.floor(totalSeconds / SECONDS_IN_YEAR);
+                totalSeconds %= SECONDS_IN_YEAR;
+                const months = Math.floor(totalSeconds / SECONDS_IN_MONTH);
+                totalSeconds %= SECONDS_IN_MONTH;
+                const weeks = Math.floor(totalSeconds / SECONDS_IN_WEEK);
+                totalSeconds %= SECONDS_IN_WEEK;
+                const days = Math.floor(totalSeconds / SECONDS_IN_DAY);
+                totalSeconds %= SECONDS_IN_DAY;
+                const hours = Math.floor(totalSeconds / SECONDS_IN_HOUR);
+                totalSeconds %= SECONDS_IN_HOUR;
+                const minutes = Math.floor(totalSeconds / SECONDS_IN_MINUTE);
+                const seconds = totalSeconds % SECONDS_IN_MINUTE;
+
+                const parts = [];
+                if (years > 0) parts.push(`${years}年`);
+                if (months > 0) parts.push(`${months}ヶ月`);
+                if (weeks > 0) parts.push(`${weeks}週間`);
+                if (days > 0) parts.push(`${days}日`);
+                if (hours > 0) parts.push(`${hours}時間`);
+                if (minutes > 0) parts.push(`${minutes}分`);
+                if (seconds > 0) parts.push(`${seconds}秒`);
+                
+                return parts.length > 0 ? parts.join(' ') : '0秒';
+            };
+
+
+            // --- UI Update Functions ---
+            const updateChargeTimeDisplay = (totalSeconds) => {
+                speedDisplay.textContent = formatTime(totalSeconds);
+            };
+            
+            const updateDischargeSpeedDisplay = (ratePerMinute) => {
+                dischargeSpeedDisplay.textContent = `1分あたり ${ratePerMinute}% 減少`;
+            };
+
+            const updateBatteryUI = () => {
+                batteryLevel = Math.max(0, Math.min(100, batteryLevel));
+                const levelInt = Math.floor(batteryLevel);
+
+                batteryBarEl.style.width = `${batteryLevel}%`;
+
+                if (levelInt !== lastDisplayedLevel) {
+                    lastDisplayedLevel = levelInt;
+                    batteryLevelEl.textContent = `${levelInt}%`;
+
+                    if (levelInt <= 20) {
+                        batteryBarEl.style.backgroundColor = 'var(--battery-low-color)';
+                    } else if (levelInt <= 80) {
+                        batteryBarEl.style.backgroundColor = 'var(--battery-medium-color)';
+                    } else {
+                        batteryBarEl.style.backgroundColor = 'var(--battery-high-color)';
+                    }
+                    
+                    let newIcon;
+                    if (isCharging && simulationInterval) {
+                        newIcon = icons.charging;
+                    } else {
+                        if (levelInt === 100) newIcon = icons.full;
+                        else if (levelInt > 50) newIcon = icons.full;
+                        else if (levelInt > 0) newIcon = icons.half;
+                        else newIcon = icons.empty;
+                    }
+                    
+                    batteryIconContainer.innerHTML = '';
+                    if (newIcon) batteryIconContainer.appendChild(newIcon.cloneNode(true));
+                }
+
+                if (simulationInterval === null) {
+                    batteryStatusEl.textContent = '待機中';
+                } else if (isCharging) {
+                    const chargeTime = parseInt(speedSlider.value, 10);
+                    const dischargeRatePerMinute = parseInt(dischargeSpeedSlider.value, 10);
+                    
+                    const chargeRatePerSecond = 100 / chargeTime;
+                    const dischargeRatePerSecond = dischargeRatePerMinute / 60;
+                    const netChargeRatePerSecond = chargeRatePerSecond - dischargeRatePerSecond;
+
+                    if (netChargeRatePerSecond > 0) {
+                        const remainingPercentage = 100 - batteryLevel;
+                        const remainingTimeInSeconds = remainingPercentage / netChargeRatePerSecond;
+                        batteryStatusEl.textContent = `充電中 (満充電まで約${formatTime(Math.ceil(remainingTimeInSeconds))})`;
+                    } else {
+                        batteryStatusEl.textContent = '充電中 (放電が速いため増えません)';
+                    }
+                } else {
+                    const dischargeRatePerMinute = parseInt(dischargeSpeedSlider.value, 10);
+                    batteryStatusEl.textContent = `放電中 (${dischargeRatePerMinute}%/分)`;
+                }
+            };
+            
+            // --- Simulation Logic ---
+            const simulationLoop = () => {
+                let netChange = 0;
+
+                if (batteryLevel > 0) {
+                    const dischargeRatePerMinute = parseInt(dischargeSpeedSlider.value, 10);
+                    const dischargeRatePerSecond = dischargeRatePerMinute / 60;
+                    const dischargeRatePerInterval = dischargeRatePerSecond / UPDATES_PER_SECOND;
+                    netChange -= dischargeRatePerInterval;
+                }
+                
+                if (isCharging && batteryLevel < 100) {
+                    const chargeTimeInSeconds = parseInt(speedSlider.value, 10);
+                    const chargeRatePerInterval = (100 / chargeTimeInSeconds) / UPDATES_PER_SECOND;
+                    netChange += chargeRatePerInterval;
+                }
+
+                batteryLevel += netChange;
+
+                if (batteryLevel >= 100) {
+                    batteryLevel = 100;
+                    stopSimulation();
+                    batteryStatusEl.textContent = '充電完了';
+                } else if (batteryLevel <= 0) {
+                    batteryLevel = 0;
+                    stopSimulation();
+                    batteryStatusEl.textContent = 'バッテリー切れ';
+                }
+
+                updateBatteryUI();
+            };
+            
+            const startSimulation = () => {
+                if (simulationInterval) return;
+                simulationInterval = setInterval(simulationLoop, UPDATE_INTERVAL_MS);
+                updateBatteryUI();
+            };
+
+            const stopSimulation = () => {
+                clearInterval(simulationInterval);
+                simulationInterval = null;
+                updateBatteryUI();
+                chargeBtn.classList.remove('active');
+                dischargeBtn.classList.remove('active');
+            };
+            
+            const resetSimulator = () => {
+                stopSimulation();
+                batteryLevel = 0;
+                isCharging = false;
+                batteryStatusEl.textContent = '待機中';
+                updateBatteryUI();
+            };
+
+            // --- Event Listeners ---
+            chargeBtn.addEventListener('click', () => {
+                if (batteryLevel >= 100) return;
+                stopSimulation();
+                isCharging = true;
+                chargeBtn.classList.add('active');
+                dischargeBtn.classList.remove('active');
+                startSimulation();
+            });
+
+            dischargeBtn.addEventListener('click', () => {
+                if (batteryLevel <= 0) return;
+                stopSimulation();
+                isCharging = false;
+                chargeBtn.classList.remove('active');
+                dischargeBtn.classList.add('active');
+                startSimulation();
+            });
+
+            resetBtn.addEventListener('click', resetSimulator);
+            
+            speedSlider.addEventListener('input', (e) => {
+                updateChargeTimeDisplay(parseInt(e.target.value, 10));
+            });
+            
+            plusBtn.addEventListener('click', () => {
+                speedSlider.value = Math.min(parseInt(speedSlider.value, 10) + 1, parseInt(speedSlider.max, 10));
+                speedSlider.dispatchEvent(new Event('input'));
+            });
+
+            minusBtn.addEventListener('click', () => {
+                speedSlider.value = Math.max(parseInt(speedSlider.value, 10) - 1, parseInt(speedSlider.min, 10));
+                speedSlider.dispatchEvent(new Event('input'));
+            });
+
+            dischargeSpeedSlider.addEventListener('input', (e) => {
+                updateDischargeSpeedDisplay(parseInt(e.target.value, 10));
+            });
+
+            dischargePlusBtn.addEventListener('click', () => {
+                dischargeSpeedSlider.value = Math.min(parseInt(dischargeSpeedSlider.value, 10) + 1, parseInt(dischargeSpeedSlider.max, 10));
+                dischargeSpeedSlider.dispatchEvent(new Event('input'));
+            });
+
+            dischargeMinusBtn.addEventListener('click', () => {
+                dischargeSpeedSlider.value = Math.max(parseInt(dischargeSpeedSlider.value, 10) - 1, parseInt(dischargeSpeedSlider.min, 10));
+                dischargeSpeedSlider.dispatchEvent(new Event('input'));
+            });
+
+
+            // --- Initial Setup ---
+            updateChargeTimeDisplay(parseInt(speedSlider.value, 10));
+            updateDischargeSpeedDisplay(parseInt(dischargeSpeedSlider.value, 10));
+            updateBatteryUI();
+        });
+    </script>
+</body>
+</html>
